@@ -1,0 +1,1 @@
+export const API_PATH = 'http://greatmocks.com/admin/api/great-mocks-apis.php?'
