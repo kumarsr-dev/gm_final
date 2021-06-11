@@ -2,63 +2,56 @@
 import Header from '../includes/header'
 import Footer from '../includes/footer'
 import React from 'react'
-import { Link as NavLink} from 'react-router-dom';
+import { Link as NavLink } from 'react-router-dom';
 import Loginpopup from "../component/popup";
 import renderHTML from 'react-render-html';
 import Path from '../includes/path'
+import { getAllCategories, getAllPackagesById } from '../services/api/api.service'
 const fetch = require('node-fetch');
 
 
 export default function Frontpage(props) {
     const [checkLogin, setCheckLogin] = React.useState(null)
     const [data, setdata] = React.useState([])
-    const [cateId,setcateId]=React.useState(1)
-   const [pkgdata,setpkgdata]=React.useState([])
+    const [cateId, setcateId] = React.useState(1)
+    const [pkgdata, setpkgdata] = React.useState([])
 
     React.useEffect(() => {
         setCheckLogin(localStorage.getItem('token'))
         try {
-            const url = 'http://greatmocks.com/admin/api/great-mocks-apis.php?type=categories'
-            fetch(url, { method: 'GET', })
-            .then(res => res.json())
+            getAllCategories()
+                .then(function (result) {
+                    setdata(result.data.data)
+                })
+        } catch (err) {
+            console.log(err)
+        }
+
+
+        getAllPackagesById(cateId)
             .then(function (result) {
-                console.log(result)
-                setdata(result.data)            
+                if (result.data.status == '200') {
+                    setpkgdata(result.data.data)
+                } else {
+                    return 'Package Not Found'
+                }
             })
-        } catch(err) {
-           console.log(err)
-          }let cateurl = 'type=packagebyCatId&category_id=' + cateId       
-          fetch(Path + cateurl, { method: 'GET', })
-              .then(res => res.json())
-              .then(function(result) {
-                  //console.log(result)
-                  if(result.status == '200') {
-                      console.log(result)
-                      setpkgdata(result.data)
-                  }else{
-                      return 'Package Not Found'
-                  }                
-              })
-          
-          },
-        
-         [])
+
+    },
+
+        [])
 
 
-    const packages=(id)=>{
-        let cateurl = 'type=packagebyCatId&category_id=' + id       
-        fetch(Path + cateurl, { method: 'GET', })
-            .then(res => res.json())
-            .then(function(result) {
-                //console.log(result)
-                if(result.status == '200') {
-                    console.log(result)
-                    setpkgdata(result.data)
-                }else{
+    const packages = (id) => {
+        getAllPackagesById(id)
+            .then(function (result) {
+                if (result.data.status == '200') {
+                    setpkgdata(result.data.data)
+                } else {
                     setpkgdata([])
-                }              
+                }
             })
-            .catch(err=>console.log(err))
+            .catch(err => console.log(err))
     }
     return (
         <div>
@@ -79,14 +72,14 @@ export default function Frontpage(props) {
                 <div class="container">
                     <div class="mba_option">
                         <ul>
-                            {data.slice(0,5).map((category, i)=>{
-                               return <li key={i}>
+                            {data.slice(0, 5).map((category, i) => {
+                                return <li key={i}>
                                     <NavLink to={'/packages/' + category.id}>
                                         <h2>{category.name}</h2>
                                         <span>{renderHTML(category.description)}</span>
-                                        <br/><i class="fa fa-chevron-down arodown" aria-hidden="true"></i>
+                                        <br /><i class="fa fa-chevron-down arodown" aria-hidden="true"></i>
                                     </NavLink>
-                                </li> 
+                                </li>
                             })}
                         </ul>
                     </div>
@@ -98,25 +91,25 @@ export default function Frontpage(props) {
                         <h2><span>Upcoming Tests Series</span> & Mock Tests </h2>
                         <h5>Click to view test series and mock tests for all exams</h5>
                         <ul>
-                            {data.slice(0,5).map((category, i)=>{
-                               return <li key={i} onClick={()=>packages(category.id)}>
+                            {data.slice(0, 5).map((category, i) => {
+                                return <li key={i} onClick={() => packages(category.id)}>
                                     <button>{renderHTML(category.name)}</button>
                                 </li>
-                                
+
                             })}
                         </ul>
-                        
+
                     </div>
                     <div class="upcomingtext_service">
                         <ul>
-                            {pkgdata.map((em)=>{
-                                if(em==''){
+                            {pkgdata.map((em) => {
+                                if (em == '') {
                                     return (console.log('adfasdfasdf'))
-                                }else{
-                                    return(<li>
+                                } else {
+                                    return (<li>
                                         <h2>{renderHTML(em.title)}</h2>
                                         <p>{renderHTML(em.description)}</p>
-                                        {checkLogin ? <NavLink to={"/packages/"+cateId} >View Test</NavLink> : <Loginpopup name="Buy Now" />}
+                                        {checkLogin ? <NavLink to={"/packages/" + cateId} >View Test</NavLink> : <Loginpopup name="Buy Now" />}
                                     </li>)
                                 }
                             })}
