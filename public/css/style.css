@@ -1047,7 +1047,7 @@ input#login_email::placeholder{ color: #000049; font-weight: 500; font-size: 15p
 .user_quest_no .questions_details>ul>li{float: left;width: 50%;padding: 10px 0px;}
 .user_quest_no .questions_details>ul>li>span{color:#fff;;width: 22%;height: 42px;background-color: red;float: left;text-align: center;padding-top: 10px;border-radius: 100% 100% 0 0;margin-right: 2%;margin-top: -9px;}
 
-.user_quest_no .questions_details>ul> li :first-child{width: 25%;background-color: #00b604;border-radius: 100%;font-size: 17px;font-weight: 600;}
+.user_quest_no .questions_details>ul> li :first-child{width: 25%; background: linear-gradient(0deg, rgba(2,0,36,1) 0%, rgba(100,179,38,1) 0%, rgba(173,224,62,1) 100%);  border-radius: 100%;font-size: 17px;font-weight: 600;}
 .user_quest_no .questions_details>ul>li:nth-child(2) span{ background-image:none;background-color: #c20000;border-radius:100%;}
 .user_quest_no .questions_details>ul>li:nth-child(3) span{background-color: #000cac;border-radius:100%;background-image: none;}
 .user_quest_no .questions_details>ul>li:nth-child(4) span{background-color: #000;;border-radius:100%;color: #fff;background-image: none;width: 25%;}
