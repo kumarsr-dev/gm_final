@@ -1,8 +1,11 @@
 import React from 'react';
 import Header from '../includes/header'
 import Footer from '../includes/footer'
-import Path from '../includes/path'
 import { Link as NavLink, useParams } from 'react-router-dom';
+import { Doughnut } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
+import Progress from 'react-progressbar';
+import { getQuestionsBySetId, getReport } from '../services/api/api.service'
 
 export default function Summary(props) {
     const [data, setData] = React.useState([])
@@ -11,40 +14,27 @@ export default function Summary(props) {
     const { set_id } = useParams()
     const [answerApi, setAnswerApi] = React.useState([])
 
-
     React.useEffect(async () => {
-
+        localStorage.removeItem('persist:root')
         async function getResult() {
-
             let getCustomerId = await localStorage.getItem('customer_id')
-
             const setid = localStorage.getItem('setid')
-            let url = 'type=questionsbySetId&set_id=' + set_id
-
-            fetch(Path + url, { method: 'POST', })
-                .then(res => res.json())
+            getQuestionsBySetId(setid)
                 .then(result => {
-                    if (result.status == '200') {
-                        console.log(result)
-                        setData(result.data)
+                    if (result.data.status == '200') {
+                        setData(result.data.data)
                     }
                 })
-
-                let url_result='type=getReport&customer_id=' + getCustomerId + '&set_id=' + set_id
-            fetch(Path + url_result, { method: 'POST', })
-                .then(res => res.json())
+            getReport(set_id, getCustomerId)
                 .then(result => {
-                    if (result.status == '200') {
-                        settopper(result)
-                        setAnswerApi(result.data)
-                        console.log(result.data)
+                    if (result.data.status == '200') {
+                        settopper(result.data)
+                        setAnswerApi(result.data.data)
                     }
                 })
                 .catch(err => console.log(err))
         }
-
         getResult()
-
     }, [])
 
     const totalTime = () => {
@@ -57,13 +47,14 @@ export default function Summary(props) {
     const correctAnswerTime = () => {
         let count = 0
         answerApi.map((e) => {
-            //console.log(e.duration)
             if (e.correctAnswer == e.answer_send)
                 count += parseInt(e.duration)
-            //console.log(e)
         })
         return (count)
     }
+
+    console.log(correctAnswerTime())
+
     const wrongAnswerTime = () => {
         let count = 0
         answerApi.map((e) => {
@@ -92,6 +83,57 @@ export default function Summary(props) {
         })
         return (count)
     }
+    const answer_bar_chart = {
+        labels: ['Red', 'Blue', 'Yellow', 'Green'],
+        datasets: [
+            {
+                labels: [],
+                data: [12, 19, 3, 5],
+                maxBarThickness: 120,
+                backgroundColor: [
+                    '#1e90ff',
+                    '#ffc000',
+                    '#dc3912',
+                    '#00db05',
+                ],
+                borderWidth: 0,
+            },
+        ],
+    };
+
+
+
+    const answer_dist_chart = {
+        labels: ['Correct', 'Incorrect', 'Un Answered'],
+        datasets: [
+            {
+                label: '# of Votes',
+                data: [12, 19, 3],
+                backgroundColor: [
+                    '#43a800',
+                    '#ff3100',
+                    '#ff9900'
+                ],
+                borderWidth: 0,
+            },
+        ],
+    };
+
+    const answer_time_chart = {
+        labels: ['Correct', 'Incorrect', 'Un Answered'],
+        datasets: [
+            {
+                label: '# of Votes',
+                data: [1, 9, 20],
+                backgroundColor: [
+                    '#1e90ff',
+                    '#dc3912',
+                    '#cccccc'
+                ],
+                borderWidth: 0,
+            },
+        ],
+    }
     return (
         <div>
 
@@ -102,14 +144,14 @@ export default function Summary(props) {
                     <div class="graph">
                         <div class="report_btn">
                             <div class="inner_div">
-                                <NavLink to={{
+                                <NavLink activeClassName='active' to={{
                                     pathname: '/finalreport/' + set_id,
                                     data: {
                                         setId: pageMarks.set_id,
 
                                     }
                                 }}>Solutions</NavLink>
-                                <NavLink to={{
+                                <NavLink activeClassName='active' to={{
                                     pathname: '/summary/' + set_id,
                                     data: {
                                         setId: pageMarks.set_id,
@@ -121,30 +163,23 @@ export default function Summary(props) {
                         <div class="compair">
                             <div class="score_bord">
                                 <div class="score_titel"><span>
-                                    <h6>score</h6>
-                                    <p>{correctAnswer() + wrongAnswer()}/200</p>
-                                </span></div>
-                                <div class="progress">
-                                    <div class="child"></div>
+                                    <h6>Score ({data.length})</h6>
+                                </span>
+                                    <Progress completed={75} color={'#ff0000'} />
                                 </div>
+
                             </div>
                             <div class="score_bord">
                                 <div class="score_titel"><span>
-                                    <h6>Time</h6>
-                                    <p>{(totalTime() / 60).toFixed(2)}/60 M</p>
+                                    <h6>Time ({(totalTime() / 60).toFixed(2)})</h6>
                                 </span></div>
-                                <div class="progress">
-                                    <div class="child"></div>
-                                </div>
+                                <Progress completed={75} color={'#1e90ff'} />
                             </div>
                             <div class="score_bord">
                                 <div class="score_titel"><span>
-                                    <h6>Accuracy</h6>
-                                    <p>{(correctAnswer() * 100 / (correctAnswer() + wrongAnswer())).toFixed(2)}</p>
+                                    <h6>Percentile ({(correctAnswer() * 100 / (correctAnswer() + wrongAnswer())).toFixed(2)})</h6>
                                 </span></div>
-                                <div class="progress">
-                                    <div class="child"></div>
-                                </div>
+                                <Progress completed={75} color={'#ff9900'} />
                             </div>
                         </div>
                         <div class="compair_btn">
@@ -155,21 +190,17 @@ export default function Summary(props) {
                             <div class="topers">
                                 <div class="comprehension">
                                     <div class="score_titel"><span>
-                                        <h6>Time({topper.topper_time})</h6>
+                                        <h6>Time ({topper.topper_time})</h6>
 
                                     </span></div>
-                                    <div class="progress">
-                                        <div class="child"></div>
-                                    </div>
+                                    <Progress completed={parseInt(topper.topper_time)} color={'#121146'} />
                                 </div>
                                 <div class="comprehension">
                                     <div class="score_titel"><span>
-                                        <h6>Accuracy({topper.topper_accuracy})</h6>
+                                        <h6>Percentile ({topper.topper_accuracy})</h6>
 
                                     </span></div>
-                                    <div class="progress">
-                                        <div class="child"></div>
-                                    </div>
+                                    <Progress completed={parseInt(topper.topper_accuracy)} color={'#ff9900'} />
                                 </div>
                             </div>
                         </div>
@@ -178,10 +209,12 @@ export default function Summary(props) {
 
                     <div class="chart">
                         <div class="chart_left">
-                            <div id="donutchart"></div>
+                            <h2>Answer Distribution</h2>
+                            <Doughnut data={answer_dist_chart} />
                         </div>
                         <div class="chart_right">
-                            <div id="result"></div>
+                            <h2>Time Spent</h2>
+                            <Doughnut data={answer_time_chart} />
                         </div>
                         <div class="table_box">
                             <div class="table">
@@ -212,9 +245,12 @@ export default function Summary(props) {
                                 </div>
                             </div>
                         </div>
-                        <div class="time_distribution">
 
-                        </div>
+                    </div>
+
+                    <div class="time_distribution">
+                        <h2>Subject Comparision</h2>
+                        <Bar data={answer_bar_chart} />
                     </div>
                 </div>
             </div>

@@ -1,8 +1,9 @@
 import React from 'react'
 import {NavLink, useParams} from 'react-router-dom'
 
-export default function Instruction(){
+export default function Instruction(props){
     const{setid} = useParams()
+    const urlData = props.location.data
     return(
         <div class="english_Instructions">
         <h2 class="Instructions">Instructions</h2>
@@ -68,7 +69,14 @@ export default function Instruction(){
         <p class="textCenter"><strong>"ALL THE BEST"</strong></p>
         <div class="next_page">
         <NavLink to={{
-                    pathname: '/promise/' + setid
+                    pathname: '/promise/' + setid,
+                    data: {
+                        marks : urlData.marks,
+                        pkgName:urlData.pkgName,
+                        pkgPrice:urlData.pkgPrice,
+                        packageId: urlData.packageId,
+                        duration: urlData.duration
+                    }
             }} >next {'>>'}</NavLink>
         </div>
     </div>

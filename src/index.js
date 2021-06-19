@@ -3,13 +3,14 @@ import ReactDOM from 'react-dom';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { Provider } from 'react-redux';
-import { allReducers } from './redux/rootReducer';
-import { createStore } from 'redux';
-const store = createStore(allReducers)
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from './redux/rootReducer';
 
 ReactDOM.render(
   <Provider store={store}>
-    <App />
+    <PersistGate persistor={persistor}>
+      <App />
+    </PersistGate>
   </Provider>,
   document.getElementById('root')
 );

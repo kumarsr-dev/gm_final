@@ -1,154 +1,179 @@
 import React, { useRef, useState } from 'react';
-import Timer from "../includes/timer";
+import { Timer } from "../includes/timer";
 import { Link as NavLink, useParams } from 'react-router-dom';
 import renderHTML from 'react-render-html';
 import Loader from '../includes/loader'
 import { getQuestionsBySetId } from '../services/api/api.service'
+import { visitedAction, markedAction, asnwerAction, clearAnswer } from '../redux/marks.action'
+import { useDispatch, useSelector } from 'react-redux';
+
 
 function QuestionAnswer(props) {
     const [data, setData] = React.useState([])
     const [currentQ, setCurrentQ] = React.useState(0)
-    const [answer, setAnswer] = React.useState([])
     const [visited, setVisited] = React.useState([])
     const [currentSub, setCurrentSub] = React.useState(null)
     let subjectList = [...new Set(data.map(item => item.subject))];
     const [answerArray, setanswerArray] = React.useState([])
-    const [markedArray, setmarkedArray] = React.useState([])
     const [markAnswered, setmarkAnswered] = React.useState(0)
-    const paperMarks = props.location.data || 0
-    const [lang, sendlang] = React.useState(paperMarks.lang || 0)
+    const propData = props.location.data || 0
+    const [lang, sendlang] = React.useState(propData.lang || 0)
     const { set_id } = useParams()
-    const [answerTime, setanswerTime] = useState(0)
     const [loading, setLoading] = React.useState(false)
-    const elem = useRef("test_paper")
-
+    const dispatch = useDispatch()
+    
+    // Get All Question for API
     React.useEffect(() => {
-        
         setLoading(true)
         getQuestionsBySetId(set_id)
-            .then(function (result) {
-                if (result.data.status == '200') {
-                    setData(result.data.data)
-                }
-                setLoading(false)
-            })
+        .then(function (result) {
+            if (result.data.status == '200') {
+                setData(result.data.data)
+            }
+            setLoading(false)
+        })
     }, [])
 
 
- 
- 
-    const countMarkAnswered = () => {
-        let check = false
-        answerArray.map((e) => {
-            markedArray.map((el) => {
-                if (e.id == el) {
-                    check = true
-                }
-            }
-            )
-        })
-        //console.log(check)
-
-        if (check == true) {
-            setmarkAnswered(markAnswered + 1)
+    // Get ALl State
+    const getState = useSelector((state)=>{
+        return {
+            marksReducer : state.marksReducer
         }
-    }
-    const getCurrentClass = function (e) {
-        let matched = false
-        let answered = false
-        let marked = false
-        visited.map(function (val) {
-            if (e == val) {
-                matched = true
-            }
-        })
-        answerArray.map(function (elm) {
-            if (e == elm.id) {
-                answered = true
-            }
-        })
-        markedArray.map(function (elm) {
-            if (e == elm) {
-                marked = true
-            }
-        })
-        if (marked == true && answered == true) {
-            return 'marked-answered-active'
-        } else if (matched == true) {
-            return 'visited'
-        } else if (marked == true) {
-            return 'marked-active'
-        } else if (answered == false && marked == false && e < currentQ) {
-            return 'visited'
-        } else if (answered == true) {
-            return 'active-answered'
-        }
+    })     
+    console.log(getState.marksReducer)
 
+    // Update State Visited on Click of Save and NExt BUtton
+    const nextbutton = () => {        
+        let push = true
+        for (var id of getState.marksReducer) {
+            if(id.question_id == currentQ) {
+                push = false
+            }
+        }
+        setCurrentQ(currentQ + 1)
+        if(push == true) {
+            dispatch(visitedAction(currentQ))
+        }        
     }
 
-    const answerObj = (el, val, Qid) => {
-        let checking = false
-        optionchecked(val, Qid)
-        for (var single in answerArray) {
-            if (answerArray[single].name == el) {
-                answerArray[single].answer = val
-                //console.log(answerArray)
-
-                checking = true
-                break;
-            }
-        }
-        if (checking == false) {
-            let ansObj = {
-                id: Qid, name: el,
-                answer: val, duration: answerTime
-            }
-            answerArray.push(ansObj)
-            console.log(answerArray)
-        }
-    }
-
+    // Update State Visited When click of Number
     const updateValues = (e) => {
-        let checking = false
+        let dublicate = false
         setCurrentQ(e)
-        for (var el of visited) {
-            if (el == e) {
-                checking = true
-                break;
-
+        for (var id of getState.marksReducer) {
+            if(id.question_id == e) {
+                dublicate = true
+                break
             }
         }
-        if (checking == false) {
-            visited.push(e)
+        if (dublicate == false) {
+            dispatch(visitedAction(currentQ))
         }
     }
-    const markedQuestion = (e) => {
-        let checking = false
-        for (var el of markedArray) {
-            if (el == e) {
-                checking = true
-                break;
 
+    // Mark when click the marked button
+    const markedQuestion = (e) => {        
+        let dublicate = false
+        for (var id of getState.marksReducer) {
+            if(id.question_id == e) {
+                dublicate = true
+                break
             }
         }
-        if (checking == false) {
-            markedArray.push(e)
+        if(dublicate == false) {
+            dispatch(markedAction(e))
         }
         setCurrentQ(currentQ + 1)
     }
-    const nextbutton = () => {
-        setCurrentQ(currentQ + 1)
+
+
+    // Set Answer of Each Question
+    const answerObj = (el, val, question_id) => {
+        let markedAns = false
+        let dub = false
+        for (var id of getState.marksReducer) {
+            if(id.question_id == question_id && id.answer_send !== null) {
+                markedAns = true
+                dub = true
+                break
+            }
+        }
+        if(dub == true) {
+            dispatch(clearAnswer(question_id))
+        }
+        dispatch(asnwerAction(question_id, val, markedAns))
     }
 
-    const optionchecked = (qid, option) => {
-        answerArray.map((el) => {
-            if (el.id == qid) {
-                if (el.answer == option) {
-                    return alert('checked')
+    // Add class on based of Response
+    const getCurrentClass = function (e) {   
+       // console.log(e)    
+        let currentClass = '' 
+        for(var item of getState.marksReducer) {
+            if(item.question_id == e) {
+                if(item.visited == true && item.marked == false && item.answer_send == null) {
+                    currentClass = 'visited'
+                } else if(item.visited == true && item.marked == true && item.answer_send == null){
+                    currentClass = 'marked'
+                } else if(item.visited == false && item.marked == false && item.answer_send !== null){
+                    currentClass = 'answered'
+                } else if(item.visited == false && item.marked == true && item.answer_send !== null){
+                    currentClass = 'answered-marked'
                 }
             }
-        })
+        }
+        return currentClass
     }
+
+    // Count Value
+    const count = (val) => {
+        let total = 0
+        for(var count of getState.marksReducer) {
+            if(count[val] == true) {
+                total += 1
+            }
+        }
+        return total
+    }
+
+    // Count Answer
+    const countAnswer = () => {
+        let total = 0
+        for(var count of getState.marksReducer) {
+            if(!(count['answer_send'] == null)) {
+                total += 1
+            }
+        }
+        return total
+    }
+
+    // Clear Response
+    const clearResponse = (e) => {
+        let clear = false
+        for (var id of getState.marksReducer) {
+            if(id.question_id == e) {
+                clear = true
+                break
+            }
+        }
+        if(clear == true) {
+            dispatch(clearAnswer(e))
+        }
+    }
+
+    // Get Current Checked Value
+    const getCheckedValue = (id, options) => {
+        for(var mark of getState.marksReducer) {
+            if(mark.question_id == id && mark.answer_send == options) {
+                return true
+            }
+        }        
+    }
+
+
+    const getCurrentSub = async (e) => {
+ 
+    }    
 
     return (
         <div id="test_paper">
@@ -168,9 +193,9 @@ function QuestionAnswer(props) {
                                     </div>
                                 </div>
                                 <ul class="sub_type_tab">
-                                    <li onClick={() => setCurrentSub(null)}>All </li>
-                                    {subjectList.map(function (sub) {
-                                        return (<li onClick={() => setCurrentSub(sub)}>{sub} </li>)
+                                    <li onClick={() => getCurrentSub(null)}>All </li>
+                                    {subjectList.map(function (sub, i) {
+                                        return (<li key={i} onClick={() => getCurrentSub(sub)}>{sub} </li>)
                                     })}
 
                                 </ul>
@@ -178,17 +203,18 @@ function QuestionAnswer(props) {
                                 <div class="time_sectin">
                                     <ul>
                                         <li><h3><span>Question Type : MCQ</span></h3></li>
-                                        <li><h3>Time Left : <span>{Timer()}</span></h3></li>
+                                        <li><h3>Time Left : <span><Timer time={propData.duration} set_id={set_id} /></span></h3></li>
                                     </ul>
                                 </div>
 
                                 {data.map((singleQA, i) => {
                                     if (i == currentQ) {
-                                        if (currentSub == singleQA.subject || currentSub == null) {
 
+                                        if (currentSub == singleQA.subject || currentSub == null) {
+                                            //console.log(currentSub + '' + singleQA.subject)
                                             if (lang == 0) {
                                                 return (
-                                                    <div className="question_list">
+                                                    <div className="question_list"  key={i}>
 
                                                         <div class="time_sectin question_no">
                                                             <ul>
@@ -198,27 +224,27 @@ function QuestionAnswer(props) {
                                                         <div class="q_height">
                                                             <div class="question_topic">{renderHTML(singleQA.question_title)}</div>
                                                             <div class="answer_select">
-                                                                <input type="radio" name={"option" + i} id="answer_a" value="A" onClick={(e) => answerObj(e.target.name, e.target.value, i)} />
+                                                                <input type="radio" name={"option" + i} id="answer_a" value="A" onClick={(e) => answerObj(e.target.name, e.target.value, i)} checked={getCheckedValue(i, "A")} />
                                                                 <label for="answer_a">{renderHTML(singleQA.option_a)}</label>
                                                             </div>
                                                             <div class="answer_select">
-                                                                <input type="radio" name={"option" + i} id="answer_b" value="B" onClick={(e) => answerObj(e.target.name, e.target.value, i)} />
+                                                                <input type="radio" name={"option" + i} id="answer_b" value="B" onClick={(e) => answerObj(e.target.name, e.target.value, i)} checked={getCheckedValue(i, "B")} />
                                                                 <label for="answer_b">{renderHTML(singleQA.option_b)}</label>
                                                             </div>
                                                             <div class="answer_select">
-                                                                <input type="radio" name={"option" + i} id="answer_c" value="C" onClick={(e) => answerObj(e.target.name, e.target.value, i)} />
+                                                                <input type="radio" name={"option" + i} id="answer_c" value="C" onClick={(e) => answerObj(e.target.name, e.target.value, i)} checked={getCheckedValue(i, "C")} />
                                                                 <label for="answer_c">{renderHTML(singleQA.option_c)}</label>
                                                             </div>
                                                             <div class="answer_select">
-                                                                <input type="radio" name={"option" + i} id="answer_d" value="D" onClick={(e) => answerObj(e.target.name, e.target.value, i)} />
+                                                                <input type="radio" name={"option" + i} id="answer_d" value="D" onClick={(e) => answerObj(e.target.name, e.target.value, i)} checked={getCheckedValue(i, "D")} />
                                                                 <label for="answer_d">{renderHTML(singleQA.option_d)}</label>
                                                             </div>
                                                         </div>
 
                                                         <div class="questionpaper_btn_botm">
                                                             <div class="mark_btn">
-                                                                <button id="next" onClick={() => { markedQuestion(i); countMarkAnswered() }}>Marked for Review</button>
-                                                                <button>Clear Response</button>
+                                                                <button id="next" onClick={() => markedQuestion(i)}>Marked for Review</button>
+                                                                <button onClick={() => clearResponse(i)}>Clear Response</button>
                                                             </div>
 
 
@@ -226,12 +252,10 @@ function QuestionAnswer(props) {
                                                                 pathname: '/report/' + set_id,
                                                                 data: {
                                                                     setId: set_id,
-                                                                    marks: paperMarks.marks,
-                                                                    answer: answerArray.length,
-                                                                    notAnswer: visited.length - answerArray.length,
-                                                                    review: markAnswered,
-                                                                    notVisited: data.length - visited.length,
-
+                                                                    questions_total: data.length,
+                                                                    packageId: propData.packageId,
+                                                                    duration: propData.duration,
+                                                                    marks: propData.marks
                                                                 }
                                                             }}> Submit</NavLink>
                                                             </div>
@@ -254,27 +278,27 @@ function QuestionAnswer(props) {
                                                         <div class="q_height">
                                                             <div class="question_topic">{renderHTML(singleQA.question_title_hi)}</div>
                                                             <div class="answer_select">
-                                                                <input type="radio" name={"option" + i} id="answer_a" value="A" onClick={(e) => answerObj(e.target.name, e.target.value, i)} />
+                                                                <input type="radio" name={"option" + i} id="answer_a" value="A" onClick={(e) => answerObj(e.target.name, e.target.value, i)} checked={getCheckedValue(i, "A")} />
                                                                 <label for="answer_a">{renderHTML(singleQA.option_a_hi)}</label>
                                                             </div>
                                                             <div class="answer_select">
-                                                                <input type="radio" name={"option" + i} id="answer_b" value="B" onClick={(e) => answerObj(e.target.name, e.target.value, i)} />
+                                                                <input type="radio" name={"option" + i} id="answer_b" value="B" onClick={(e) => answerObj(e.target.name, e.target.value, i)} checked={getCheckedValue(i, "B")} />
                                                                 <label for="answer_b">{renderHTML(singleQA.option_b_hi)}</label>
                                                             </div>
                                                             <div class="answer_select">
-                                                                <input type="radio" name={"option" + i} id="answer_c" value="C" onClick={(e) => answerObj(e.target.name, e.target.value, i)} />
+                                                                <input type="radio" name={"option" + i} id="answer_c" value="C" onClick={(e) => answerObj(e.target.name, e.target.value, i)} checked={getCheckedValue(i, "C")} />
                                                                 <label for="answer_c">{renderHTML(singleQA.option_c_hi)}</label>
                                                             </div>
                                                             <div class="answer_select">
-                                                                <input type="radio" name={"option" + i} id="answer_d" value="D" onClick={(e) => answerObj(e.target.name, e.target.value, i)} />
+                                                                <input type="radio" name={"option" + i} id="answer_d" value="D" onClick={(e) => answerObj(e.target.name, e.target.value, i)} checked={getCheckedValue(i, "D")} />
                                                                 <label for="answer_d">{renderHTML(singleQA.option_d_hi)}</label>
                                                             </div>
                                                         </div>
 
                                                         <div class="questionpaper_btn_botm">
                                                             <div class="mark_btn">
-                                                                <button id="next" onClick={() => { markedQuestion(i); countMarkAnswered() }}>Marked for Review</button>
-                                                                <button>Clear Response</button>
+                                                                <button id="next" onClick={() => markedQuestion(i)}>Marked for Review</button>
+                                                                <button onClick={() => clearResponse(i)}>Clear Response</button>
                                                             </div>
 
 
@@ -282,12 +306,10 @@ function QuestionAnswer(props) {
                                                                 pathname: '/report/',
                                                                 data: {
                                                                     setId: set_id,
-                                                                    marks: paperMarks.marks,
-                                                                    answer: answerArray.length,
-                                                                    notAnswer: visited.length - answerArray.length,
-                                                                    review: markAnswered,
-                                                                    notVisited: data.length - visited.length,
-
+                                                                    questions_total: data.length,
+                                                                    packageId: propData.packageId,
+                                                                    duration: propData.duration,
+                                                                    marks: propData.marks
                                                                 }
                                                             }}> Submit</NavLink>
                                                             </div>
@@ -306,20 +328,20 @@ function QuestionAnswer(props) {
                             <div class="user_quest_no">
                                 <div class="user_info">
                                     <span>R</span> Rohit Verma
-                            </div>
+                                </div>
                                 <div class="questions_details">
                                     <ul>
 
-                                        <li className={answer.map((ansCount, i) => { if (currentQ == ansCount) { return ('active') } })}><span>{answerArray.length}</span><h4>Answer</h4></li>
-                                        <li><span>{visited.length - answerArray.length}</span><h4>Not Answer</h4></li>
-                                        <li><span>{markedArray.length}</span><h4>Marked</h4></li>
-                                        <li><span>{data.length - visited.length}</span><h4>Not visited</h4></li>
+                                        <li><span>{countAnswer()}</span><h4>Answer</h4></li>
+                                        <li><span>{count('visited')}</span><h4>Not Answer</h4></li>
+                                        <li><span>{count('marked')}</span><h4>Marked</h4></li>
+                                        <li><span>{data.length - countAnswer() - count('visited')}</span><h4>Not visited</h4></li>
                                         <li><span>{markAnswered}</span><h4>Answer & Mark for Review</h4></li>
                                     </ul>
                                 </div>
                                 <div class="questions_Quantitative">
-                                    <h2>Quantitative Abilities</h2>
-                                    <h4>Choose a Question</h4>
+                                    <h2>{currentSub || 'Choose a Question'}</h2>
+
                                     <ul>
                                         {data.map(function (singleQA, i) {
                                             if (currentSub == singleQA.subject || currentSub == null) {

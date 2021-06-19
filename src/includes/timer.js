@@ -1,9 +1,9 @@
 import { useEffect,useState } from "react";
 import { Redirect } from "react-router";
 
-export default function Timer(props) {
+export const Timer = props => {
 
-    var TIME = 180;
+    var TIME = props.time;
     const[times , setTime] = useState()
     const[fixtime] = useState(new Date().getTime() + TIME * 60 * 1000)
 
@@ -17,18 +17,18 @@ export default function Timer(props) {
         const seconds = Math.floor( (TimeLeft/1000) % 60 );
         
         setTime(minutes + ":" + seconds)
-
+        
         if (TimeLeft < 0) {
             clearInterval(x);
             setTime("Time out");
-            // <Redirect to="/contact_us" />
+           // <Redirect to="/" />
         }
         }, 1000);
+ 
+    if(times == "Time out") {
+        return <Redirect to={"/report/" + props.set_id} />
+    } else {
+        return (<>{times}</>)
+    }
     
-
-    return (
-        <>
-            <span>{times}</span>
-        </>
-    )
 }

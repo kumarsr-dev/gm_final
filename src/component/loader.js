@@ -1,7 +1,7 @@
 export default function Loading() {
     return (
-        <div class="loading_bg">
-            <p>Loading</p>
-            <div class="loader">Loading...</div></div>
+        <div class="loader_outer">
+            <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+        </div>
     )
 }

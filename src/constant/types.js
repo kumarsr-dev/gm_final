@@ -1,3 +1,5 @@
 export const ANSWER = 'ANSWER'
 export const MARKED = 'MARKED'
 export const VISITED = 'VISITED'
+export const CLEAR_RESPONSE = 'CLEAR RESPONSE'
+export const PACAKGE_OWNED = 'PACKAGE OWNED'
